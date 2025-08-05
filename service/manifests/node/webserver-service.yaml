@@ -1,0 +1,17 @@
+apiVersion: v1
+kind: Service
+metadata:
+  labels:
+    app: webserver-service
+  name: webserver-service
+  namespace: webapp
+spec:
+  ports:
+    - name: http
+      port: 80
+      protocol: TCP
+      targetPort: 80
+      nodePort: 30000  # 指定がない場合 30000-32767 の範囲でランダムに割り当て
+  selector:
+    app: webserver
+  type: NodePort    # ClusterIP -> NodePort に変更
