@@ -274,5 +274,262 @@ docker.io/library/webapp-php:v0.1.0
 docker.io/library/webapp-nginx:v0.1.0
 ```
 
+- CrashLoopBackOff のエラーが出た時
+
+下記のコマンドでログを確認
+
+```
+kubectl -n webapp-practice get all
+NAME                          READY   STATUS             RESTARTS      AGE
+pod/webapp-6b7f85f6dd-b6k9m   1/2     CrashLoopBackOff   3 (18s ago)   60s
+pod/webapp-6b7f85f6dd-rkp9m   1/2     CrashLoopBackOff   3 (14s ago)   60s
+
+NAME             TYPE        CLUSTER-IP       EXTERNAL-IP   PORT(S)   AGE
+service/webapp   ClusterIP   10.107.201.134   <none>        80/TCP    20m
+
+NAME                     READY   UP-TO-DATE   AVAILABLE   AGE
+deployment.apps/webapp   0/2     2            0           21m
+
+NAME                                DESIRED   CURRENT   READY   AGE
+replicaset.apps/webapp-6b7f85f6dd   2         2         0       60s
+replicaset.apps/webapp-7c8475b989   0         0         0       21m
+```
+
+```
+kubectl -n webapp-practice describe pod/webapp-6b7f85f6dd-b6k9m
+Name:             webapp-6b7f85f6dd-b6k9m
+Namespace:        webapp-practice
+Priority:         0
+Service Account:  default
+Node:             minikube/192.168.49.2
+Start Time:       Sun, 10 Aug 2025 10:52:59 +0900
+Labels:           app=webapp
+                  pod-template-hash=6b7f85f6dd
+Annotations:      <none>
+Status:           Running
+IP:               10.244.0.9
+IPs:
+  IP:           10.244.0.9
+Controlled By:  ReplicaSet/webapp-6b7f85f6dd
+Containers:
+  webserver:
+    Container ID:   docker://9fca4b3773fc58f85dc51b2a0f32006d86ad675afdd90ef8503cece149a1b8fd
+    Image:          webapp-nginx:v0.1.0
+    Image ID:       docker://sha256:87bec436ab610be2f2fa80160689ca2e60fc1da97e56279309e45834d50f6700
+    Port:           <none>
+    Host Port:      <none>
+    State:          Running
+      Started:      Sun, 10 Aug 2025 10:53:00 +0900
+    Ready:          True
+    Restart Count:  0
+    Limits:
+      cpu:     100m
+      memory:  32Mi
+    Requests:
+      cpu:        50m
+      memory:     16Mi
+    Environment:  <none>
+    Mounts:
+      /var/run/secrets/kubernetes.io/serviceaccount from kube-api-access-98848 (ro)
+  app:
+    Container ID:   docker://f38211440103b357b35faf47ec63a028d14772d8a5186659801a102aa5b22941
+    Image:          webapp-php:v0.1.0
+    Image ID:       docker://sha256:2d0df62a715ce2fcd3de1e6c4ea857dfd028283f2512e39b9edcd0fbbcc3d1b3
+    Port:           <none>
+    Host Port:      <none>
+    State:          Waiting
+      Reason:       CrashLoopBackOff
+    Last State:     Terminated
+      Reason:       Error
+      Exit Code:    78
+      Started:      Sun, 10 Aug 2025 10:54:30 +0900
+      Finished:     Sun, 10 Aug 2025 10:54:31 +0900
+    Ready:          False
+    Restart Count:  4
+    Limits:
+      cpu:     100m
+      memory:  32Mi
+    Requests:
+      cpu:        50m
+      memory:     16Mi
+    Environment:  <none>
+    Mounts:
+      /var/run/secrets/kubernetes.io/serviceaccount from kube-api-access-98848 (ro)
+Conditions:
+  Type                        Status
+  PodReadyToStartContainers   True
+  Initialized                 True
+  Ready                       False
+  ContainersReady             False
+  PodScheduled                True
+Volumes:
+  kube-api-access-98848:
+    Type:                    Projected (a volume that contains injected data from multiple sources)
+    TokenExpirationSeconds:  3607
+    ConfigMapName:           kube-root-ca.crt
+    ConfigMapOptional:       <nil>
+    DownwardAPI:             true
+QoS Class:                   Burstable
+Node-Selectors:              <none>
+Tolerations:                 node.kubernetes.io/not-ready:NoExecute op=Exists for 300s
+                             node.kubernetes.io/unreachable:NoExecute op=Exists for 300s
+Events:
+  Type     Reason     Age                   From               Message
+  ----     ------     ----                  ----               -------
+  Normal   Scheduled  2m26s                 default-scheduler  Successfully assigned webapp-practice/webapp-6b7f85f6dd-b6k9m to minikube
+  Normal   Pulled     2m26s                 kubelet            Container image "webapp-nginx:v0.1.0" already present on machine
+  Normal   Created    2m25s                 kubelet            Created container webserver
+  Normal   Started    2m25s                 kubelet            Started container webserver
+  Normal   Started    104s (x4 over 2m25s)  kubelet            Started container app
+  Warning  BackOff    66s (x8 over 2m23s)   kubelet            Back-off restarting failed container app in pod webapp-6b7f85f6dd-b6k9m_webapp-practice(e5bc64f3-05f4-41b3-92ea-34a53c953912)
+  Normal   Pulled     55s (x5 over 2m25s)   kubelet            Container image "webapp-php:v0.1.0" already present on machine
+  Normal   Created    55s (x5 over 2m25s)   kubelet            Created container app
+```
+
+```
+kubectl -n webapp-practice logs pod/webapp-6b7f85f6dd-b6k9m -c app
+[10-Aug-2025 01:55:53] ERROR: unable to bind listening socket for address '/var/run/php/php-fpm.sock': No such file or directory (2)
+[10-Aug-2025 01:55:53] ERROR: FPM initialization failed
+```
+
+ソケットファイル用の volume がないので追加する必要がある
+
+volume を設定した後に
+
+```
+kubectl apply -f ./manifests
+```
+
+で volume の設定を反映させ、
+
+```
+minikube tunnel
+curl -i http://127.0.0.1
+```
+
+で Nginx へリクエストを送って 200 が帰ってきたら成功
+
+```
+HTTP/1.1 200 OK
+Date: Sun, 10 Aug 2025 01:59:43 GMT
+Content-Type: text/html; charset=UTF-8
+Transfer-Encoding: chunked
+Connection: keep-alive
+X-Powered-By: PHP/8.3.14
+
+<!doctype html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <script src="https://cdn.tailwindcss.com/3.0.0"></script>
+</head>
+<body class="bg-gray-50 flex items-center justify-center min-h-screen">
+  <div class="bg-white p-10 rounded-lg shadow-lg">
+    <h1 class="text-4xl font-bold underline text-gray-900">Hello! Docker Compose!</h1>
+    <p class="mt-4 text-gray-600">PHP version: 8.3.14</p>
+    <p class="mt-4 text-gray-600">MySQL version: N/A</p>
+  </div>
+</body>
+</html>
+```
+
+- 環境変数化されているかの確認
+
+```
+kubectl -n webapp-practice describe pods/webapp-dbd997c99-knwwx
+Name:             webapp-dbd997c99-knwwx
+Namespace:        webapp-practice
+Priority:         0
+Service Account:  default
+Node:             minikube/192.168.49.2
+Start Time:       Sun, 10 Aug 2025 11:09:23 +0900
+Labels:           app=webapp
+                  pod-template-hash=dbd997c99
+Annotations:      <none>
+Status:           Running
+IP:               10.244.0.17
+IPs:
+  IP:           10.244.0.17
+Controlled By:  ReplicaSet/webapp-dbd997c99
+Containers:
+  webserver:
+    Container ID:   docker://2d3522ee7cc928e5c3e851c7e98eca0101707679f512dce85f4545fcab66e9cb
+    Image:          webapp-nginx:v0.1.0
+    Image ID:       docker://sha256:87bec436ab610be2f2fa80160689ca2e60fc1da97e56279309e45834d50f6700
+    Port:           <none>
+    Host Port:      <none>
+    State:          Running
+      Started:      Sun, 10 Aug 2025 11:09:24 +0900
+    Ready:          True
+    Restart Count:  0
+    Limits:
+      cpu:     100m
+      memory:  32Mi
+    Requests:
+      cpu:        50m
+      memory:     16Mi
+    Environment:  <none>
+    Mounts:
+      /var/run/php from php-sock (rw)
+      /var/run/secrets/kubernetes.io/serviceaccount from kube-api-access-dw6h2 (ro)
+  app:
+    Container ID:   docker://18d4f6890c598704b0983580f7690a192e1cb54a6a826b0f4b8174a65af240bd
+    Image:          webapp-php:v0.1.0
+    Image ID:       docker://sha256:2d0df62a715ce2fcd3de1e6c4ea857dfd028283f2512e39b9edcd0fbbcc3d1b3
+    Port:           <none>
+    Host Port:      <none>
+    State:          Running
+      Started:      Sun, 10 Aug 2025 11:09:24 +0900
+    Ready:          True
+    Restart Count:  0
+    Limits:
+      cpu:     100m
+      memory:  32Mi
+    Requests:
+      cpu:     50m
+      memory:  16Mi
+    Environment:
+      DB_HOST:  <set to the key 'db.host' of config map 'webapp-config'>  Optional: false
+      DB_NAME:  <set to the key 'db.name' of config map 'webapp-config'>  Optional: false
+      DB_USER:  <set to the key 'db.user' in secret 'webapp-secret'>      Optional: false
+      DB_PASS:  <set to the key 'db.pass' in secret 'webapp-secret'>      Optional: false
+    Mounts:
+      /var/run/php from php-sock (rw)
+      /var/run/secrets/kubernetes.io/serviceaccount from kube-api-access-dw6h2 (ro)
+Conditions:
+  Type                        Status
+  PodReadyToStartContainers   True
+  Initialized                 True
+  Ready                       True
+  ContainersReady             True
+  PodScheduled                True
+Volumes:
+  php-sock:
+    Type:       EmptyDir (a temporary directory that shares a pod's lifetime)
+    Medium:
+    SizeLimit:  <unset>
+  kube-api-access-dw6h2:
+    Type:                    Projected (a volume that contains injected data from multiple sources)
+    TokenExpirationSeconds:  3607
+    ConfigMapName:           kube-root-ca.crt
+    ConfigMapOptional:       <nil>
+    DownwardAPI:             true
+QoS Class:                   Burstable
+Node-Selectors:              <none>
+Tolerations:                 node.kubernetes.io/not-ready:NoExecute op=Exists for 300s
+                             node.kubernetes.io/unreachable:NoExecute op=Exists for 300s
+Events:
+  Type    Reason     Age   From               Message
+  ----    ------     ----  ----               -------
+  Normal  Scheduled  96s   default-scheduler  Successfully assigned webapp-practice/webapp-dbd997c99-knwwx to minikube
+  Normal  Pulled     96s   kubelet            Container image "webapp-nginx:v0.1.0" already present on machine
+  Normal  Created    95s   kubelet            Created container webserver
+  Normal  Started    95s   kubelet            Started container webserver
+  Normal  Pulled     95s   kubelet            Container image "webapp-php:v0.1.0" already present on machine
+  Normal  Created    95s   kubelet            Created container app
+  Normal  Started    95s   kubelet            Started container app
+```
+
 詳細は以下を参照してください。
 [https://github.com/masa0221/sample-webapp-php-manifests](https://github.com/masa0221/sample-webapp-php-manifests)
