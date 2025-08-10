@@ -1,0 +1,28 @@
+apiVersion: v1
+kind: PersistentVolume
+metadata:
+  name: my-pv                  # PV の名前を指定
+spec:
+  storageClassName: standard   # StorageClass を指定
+  capacity:                    # 容量を定義
+    storage: 1Gi
+  accessModes:                 # アクセス制御の設定
+    - ReadWriteOnce            # 単一ノードで読み書き可能なモード
+  volumeMode: Filesystem       # ボリュームモードの設定
+  hostPath:                    # ストレージのパスを指定
+    path: /var/data/mysql-data # ノードのローカルファイルシステム上の特定のパス
+---
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: mysql-pvc              # PVC の名前を指定
+  namespace: webapp-practice   # PVC が属するネームスペースを指定
+spec:
+  storageClassName: standard   # StorageClass を指定
+  resources:                   # リソースの要求を定義
+    requests:
+      storage: 1Gi
+  accessModes:                 # アクセス制御の設定
+    - ReadWriteOnce            # 単一ノードで読み書き可能なモード
+  volumeMode: Filesystem       # ボリュームモードの設定
+  volumeName: my-pv            # バインドする PV の名前を指定

@@ -87,6 +87,10 @@ spec:
       labels:
         app: db
     spec:
+      volumes:
+      - name: mysql-storage
+        persistentVolumeClaim:
+          claimName: mysql-pvc
       containers:
       - image: mysql:8.0
         name: mysql
@@ -97,6 +101,9 @@ spec:
           requests:
             cpu: "250m"
             memory: "256Mi"
+        volumeMounts:
+        - mountPath: /var/lib/mysql
+          name: mysql-storage
         env:
         - name: MYSQL_ALLOW_EMPTY_PASSWORD
           value: "yes"
