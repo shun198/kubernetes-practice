@@ -1,7 +1,7 @@
 apiVersion: apps/v1
 kind: Deployment
 metadata:
-  name: nginx
+  name: {{ include "template-deep-dive.selectorLabels" . }}
   labels:
     app: {{.Chart.Name}}
 spec:
