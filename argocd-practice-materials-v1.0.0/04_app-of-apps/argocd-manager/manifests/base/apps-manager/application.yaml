@@ -1,0 +1,16 @@
+apiVersion: argoproj.io/v1alpha1
+kind: Application
+metadata:
+  name: apps-manager
+  namespace: argocd
+spec:
+  project: apps-management
+  source:
+    # FIXME: apps 以下の manifests 管理しているリポジトリに変更してください
+    repoURL: https://github.com/<YOUR_GITHUB_ORG>/example-argocd-apps.git
+    targetRevision: main
+    path: manifests/base
+  destination:
+    server: https://kubernetes.default.svc
+    namespace: argocd
+  syncPolicy: {}

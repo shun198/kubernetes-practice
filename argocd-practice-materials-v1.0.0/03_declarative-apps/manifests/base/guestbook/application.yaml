@@ -1,0 +1,18 @@
+apiVersion: argoproj.io/v1alpha1
+kind: Application
+metadata:
+  name: guestbook
+  namespace: argocd
+spec:
+  project: guestbook-project
+  source:
+    repoURL: https://github.com/argoproj/argocd-example-apps.git
+    targetRevision: HEAD
+    path: kustomize-guestbook
+  destination:
+    name: '' # 環境ごとに上書きする
+    # server: ''   # 環境ごとに上書きする
+    namespace: guestbook
+  syncPolicy:
+    syncOptions:
+      - CreateNamespace=true

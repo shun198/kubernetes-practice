@@ -1,0 +1,16 @@
+# public repository のサンプル
+apiVersion: v1
+kind: Secret
+type: Opaque
+metadata:
+  name: argocd-example-apps
+  namespace: argocd
+  labels:
+    argocd.argoproj.io/secret-type: repository
+data:
+  # echo -n guestbook-project | base64
+  project: Z3Vlc3Rib29rLXByb2plY3Q=
+  # echo -n git | base64
+  type: Z2l0
+  # echo -n https://github.com/argoproj/argocd-example-apps.git | base64
+  url: aHR0cHM6Ly9naXRodWIuY29tL2FyZ29wcm9qL2FyZ29jZC1leGFtcGxlLWFwcHMuZ2l0

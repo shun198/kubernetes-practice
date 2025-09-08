@@ -1,0 +1,15 @@
+apiVersion: v1
+kind: Secret
+type: Opaque
+metadata:
+  name: apps-manifests-repository
+  namespace: argocd
+  labels:
+    argocd.argoproj.io/secret-type: repository
+data:
+  # echo -n apps-management | base64
+  project: YXBwcy1tYW5hZ2VtZW50
+
+  # 各アプリケーションの ArgoCD 用の manifests が管理されているリポジトリを指定する
+  # echo -n 'https://github.com/example/example-argocd-apps.git' | base64
+  url: aHR0cHM6Ly9naXRodWIuY29tL2V4YW1wbGUvZXhhbXBsZS1hcmdvY2QtYXBwcy5naXQ=

@@ -1,0 +1,15 @@
+apiVersion: argoproj.io/v1alpha1
+kind: AppProject
+metadata:
+  name: guestbook-project
+  namespace: argocd
+spec:
+  description: guestbook project
+  sourceRepos:
+    - 'https://github.com/argoproj/argocd-example-apps.git'
+  destinations:
+    - name: '' # 環境ごとに上書きする
+      namespace: guestbook
+  clusterResourceWhitelist:
+    - group: '*'
+      kind: '*'

@@ -1,0 +1,9 @@
+apiVersion: kustomize.config.k8s.io/v1beta1
+kind: Kustomization
+namespace: argocd
+resources:
+  - ../../base
+patches:
+  - path: argocd-secret.yaml
+  - path: guestbook/project.yaml
+  - path: guestbook/application.yaml

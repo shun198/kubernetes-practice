@@ -1,0 +1,67 @@
+apiVersion: eksctl.io/v1alpha5
+kind: ClusterConfig
+metadata:
+  name: webapp
+  region: ap-northeast-1
+  version: "1.30"
+addonsConfig:
+  autoApplyPodIdentityAssociations: true
+addons:
+  - name: eks-pod-identity-agent
+  - name: vpc-cni
+  - name: kube-proxy
+  - name: coredns
+# FIXME: terraform で作成した VPC や subnet の情報に書き換えてください
+vpc:
+  id: vpc-12345sample12345a
+  subnets:
+    private:
+      ap-northeast-a:
+        id: subnet-sample12345abcde1
+      ap-northeast-c:
+        id: subnet-sample12345abcde2
+    public:
+      ap-northeast-a:
+        id: subnet-sample12345abcde3
+      ap-northeast-c:
+        id: subnet-sample12345abcde4
+managedNodeGroups:
+  - name: workers
+    instanceType: t3.medium
+    desiredCapacity: 2
+    maxSize: 10
+    minSize: 2
+    securityGroups:
+      # FIXME: terraform で作成した worker_node の sg に書き換えてください
+      attachIDs: ["sg-12345sample123456"]
+iam:
+  withOIDC: true
+  serviceAccounts:
+    - metadata:
+        name: aws-load-balancer-controller
+        namespace: kube-system
+      attachPolicyARNs:
+        # FIXME: 自分で作成したポリシーのarnに書き換えてください
+        - "arn:aws:iam::123456789012:policy/AWSLoadBalancerControllerIAMPolicy"
+      roleName: "aws-load-balancer-controller-role"
+    - metadata:
+        name: webapp-sa
+        namespace: webapp
+      attachPolicyARNs:
+        # FIXME: 自分で作成したポリシーのarnに書き換えてください
+        - "arn:aws:iam::123456789012:policy/WebappSecretAccessPolicy"
+      roleName: "webapp-role"
+    - metadata:
+        name: external-dns-sa
+        namespace: external-dns
+      attachPolicyARNs:
+        # FIXME: 自分で作成したポリシーのarnに書き換えてください
+        - "arn:aws:iam::123456789012:policy/AllowExternalDNSUpdatesPolicy"
+      roleName: "external-dns-role"
+    - metadata:
+        name: cluster-autoscaler
+        namespace: kube-system
+      attachPolicyARNs:
+        # FIXME: 自分で作成したポリシーのarnに書き換えてください
+        - "arn:aws:iam::123456789012:policy/ClusterAutoscalerPolicy"
+      roleName: "cluster-autoscaler-role"
